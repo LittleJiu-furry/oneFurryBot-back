@@ -5,6 +5,14 @@ import asyncio
 import opType
 import os
 import random
+import platform
+
+_about_me = {
+    "name": "oneFurryBot",
+    "dec":"",
+    "author":"狐小九Little_Jiu",
+    "version":"0.1-dev",
+}
 
 event = TypeBind() # 事件监听注册器
 mBind = MsgBind() # 针对于消息内容进行相应的注册器
@@ -42,13 +50,15 @@ ALLOW_NEXT = True
 DISALLOW_NEXT = False
 
 # 功能函数
+
+# 签到功能
 @mBind.Group_text("sign","签到")
 async def sign(data:GroupMessage)->bool:
     # 判断当前群是否开启了全局签到
     enable = False
     conf = {}
     try:
-        with open(getPath("./config/conf.json"), mode="r+",encoding="utf-8") as f:
+        with open(getPath("./config/Gconf.json"), mode="r+",encoding="utf-8") as f:
             f.seek(0,0)
             conf = json.load(f)
             try:
@@ -63,7 +73,7 @@ async def sign(data:GroupMessage)->bool:
                 f.write(json.dumps(conf))
     except FileNotFoundError:
         # 配置文件不存在
-        with open(getPath("./config/conf.json"), mode="a+",encoding="utf-8") as f:
+        with open(getPath("./config/Gconf.json"), mode="a+",encoding="utf-8") as f:
             conf = {}
             conf[f"G{str(data.fromGroup)}"] = {"enable": False}
             enable = False
@@ -82,28 +92,37 @@ async def sign(data:GroupMessage)->bool:
                         # 今天已经签到了
                         msg = MsgChain()
                         msg.addAt(data.fromQQ)
-                        msg.addTextMsg(f'你今天已经在{str(_userData["lastSignGroup"])}签到过了，不可以重复签到哦~')
+                        for _text in botConfig["signBot"]["signText_faile"]:
+                            _text = str(_text).replace("{{ GroupName }}",str(_userData["lastSignGroup_name"]))
+                            _text = str(_text).replace("{{ GroupId }}",str(_userData["lastSignGroup"]))
+                            msg.addTextMsg(_text)
                         await bot.sendGroupMsg(msg,data.fromGroup)
-                    elif(date.tm_yday > lastSignData.tm_yday):
+                    elif(date.tm_yday > lastSignData.tm_yday or (date.tm_yday == 1 and lastSignData.tm_yday > date.tm_yday and date.tm_year > lastSignData.tm_year)):
+                        # 今天的年日期大于上次签到的年日期
+                        # 或者今天的年日期为1，上次签到的年日期比当前年日期大，并且上次签到的年份小于当前年份
                         # 今天还没有签到
                         _userData["lastSignGroup"] = data.fromGroup
+                        _userData["lastSignGroup_name"] = data.fromGroup_name
                         _userData["lastSignTimestamp"] = data.msgChain.getSource().msgTime
                         _userData["signValue"] += _value
                         _userData["signDate"]["thisMonth"].append(date.tm_mday)
                         signData[f"U{str(data.fromQQ)}"] = _userData
                         f.seek(0,0)
                         f.truncate(0)
-                        f.write(json.dumps(signData))
+                        f.write(json.dumps(signData,ensure_ascii=False))
                         msg = MsgChain()
                         msg.addAt(data.fromQQ)
-                        msg.addTextMsg(f'签到成功喵~\n')
-                        msg.addTextMsg(f'获得了{str(_value)}点积分\n')
-                        msg.addTextMsg(f'当前有{str(_userData["signValue"])}点积分\n')
+                        for _text in botConfig["signBot"]["signText"]:
+                            _text = str(_text).replace("{{ newValue }}",str(_value))
+                            _text = str(_text).replace("{{ signName }}",str(botConfig["signBot"]["signName"]))
+                            _text = str(_text).replace("{{ totalValue }}",str(_userData["signValue"]))
+                            msg.addTextMsg(_text)
                         await bot.sendGroupMsg(msg,data.fromGroup)
                 except KeyError:
                     # 一旦触发KeyError,就说明配置文件里面不存在这个配置项
                     signData[f"U{str(data.fromQQ)}"] = {
-                        "lastSignGroup": data.fromGroup, 
+                        "lastSignGroup": data.fromGroup,
+                        "lastSignGroup_name":data.fromGroup_name, 
                         "lastSignTimestamp": data.msgChain.getSource().msgTime,
                         "signValue": _value,
                         "signDate":{
@@ -115,10 +134,11 @@ async def sign(data:GroupMessage)->bool:
                     f.write(json.dumps(signData))
                     msg = MsgChain()
                     msg.addAt(data.fromQQ)
-                    msg.addTextMsg(f'签到成功喵~\n')
-                    msg.addTextMsg(f'获得了{str(_value)}点积分\n')
-                    _value = str(signData[f"U{str(data.fromQQ)}"]["signValue"])
-                    msg.addTextMsg(f'当前有{_value}点积分\n')
+                    for _text in botConfig["signBot"]["signText"]:
+                            _text = str(_text).replace("{{ newValue }}",str(_value))
+                            _text = str(_text).replace("{{ signName }}",str(botConfig["signBot"]["signName"]))
+                            _text = str(_text).replace("{{ totalValue }}",str(signData[f"U{str(data.fromQQ)}"]["signValue"]))
+                            msg.addTextMsg(_text)
                     await bot.sendGroupMsg(msg,data.fromGroup)
         except FileNotFoundError:
             with open(getPath("./config/sign.json"), mode="a+",encoding="utf-8") as f:
@@ -126,7 +146,8 @@ async def sign(data:GroupMessage)->bool:
                 # 说明还没有任何人签到过
                 uconf = {                    
                     f"U{data.fromQQ}":{
-                        "lastSignGroup": data.fromGroup, 
+                        "lastSignGroup": data.fromGroup,
+                        "lastSignGroup_name":data.fromGroup_name, 
                         "lastSignTimestamp": data.msgChain.getSource().msgTime,
                         "signValue": _value,
                         "signDate":{
@@ -137,25 +158,89 @@ async def sign(data:GroupMessage)->bool:
                 f.write(json.dumps(uconf))
                 msg = MsgChain()
                 msg.addAt(data.fromQQ)
-                msg.addTextMsg(f'签到成功喵~\n')
-                msg.addTextMsg(f'获得了{str(_value)}点积分\n')
-                _value = str(uconf[f'U{data.fromQQ}']["signValue"])
-                msg.addTextMsg(f'当前有{_value}点积分\n')
+                for _text in botConfig["signBot"]["signText"]:
+                    _text = str(_text).replace("{{ newValue }}",str(_value))
+                    _text = str(_text).replace("{{ signName }}",str(botConfig["signBot"]["signName"]))
+                    _text = str(_text).replace("{{ totalValue }}",str(signData[f"U{str(data.fromQQ)}"]["signValue"]))
+                    msg.addTextMsg(_text)
+
                 await bot.sendGroupMsg(msg,data.fromGroup)
     return ALLOW_NEXT
 
-
+# 菜单
+@mBind.Group_text("#菜单","#menu")
+async def menu(data:GroupMessage):
+    msg = MsgChain()
+    msg.addTextMsg("=OneFurryBot=")
+    msg.addTextMsg("#菜单 #menu 打开菜单")
+    msg.addTextMsg("#系统信息 #system 查看系统信息")
+    msg.addTextMsg("")
+    msg.addTextMsg("机器人正在开发中，更多功能即将来临")
+    msg.addTextMsg("=By LittleJiu=")
+    await bot.sendGroupMsg(msg,data.fromGroup)
     
+# 系统信息 
+@mBind.Group_text("#系统信息","#system")
+@mBind.Friend_text("#系统信息","#system")
+async def systemInfo(data):
+    msg = MsgChain()
+    msg.addTextMsg("=OneFurryBot=")
+    msg.addTextMsg("所用框架: Mirai")
+    msg.addTextMsg(f'当前插件版本: {_about_me["version"]}')
+    msg.addTextMsg(f'当前平台: {platform.system()}')
+    msg.addTextMsg(f'平台版本信息: {platform.version()}')
+    msg.addTextMsg(f'当前Python版本: {platform.python_version()}')
+    msg.addTextMsg("=By LittleJiu=")
+    if(type(data) == GroupMessage):
+        # 来自群里
+        await bot.sendGroupMsg(msg,data.fromGroup)
+    elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
+        # 来自好友
+        await bot.sendFriendMsg(msg,data.fromQQ)
     
-
-
-    
-
+@mBind.Group_text("#关闭","#close")
+@mBind.Friend_text("#关闭","#close")
+async def closeFunc(data):
+    if(data.fromQQ == botConfig["owner"]):
+        if(type(data) == GroupMessage):
+            # 来自群里
+            await bot.sendGroupMsg(MsgChain().addTextMsg("已关闭"),data.fromGroup)
+        elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
+            # 来自好友
+            await bot.sendFriendMsg(MsgChain().addTextMsg("已关闭"),data.fromQQ)
+        bot.close()
 
 
 
 
 # 入口
 if __name__ == "__main__":
+    # 初始化一个机器人实例
     bot = Bot("Abyss-Reg031204",3235302005,event)
+    botConfig = {}
+    # 将配置读入内存
+    try:
+        with open(getPath("./config/conf.json"),encoding="utf-8",mode="r+") as f:
+            botConfig = json.load(f)
+    except FileNotFoundError:
+        # 文件不存在,将进行创建
+        with open(getPath("./config/conf.json"),encoding="utf-8",mode="a+") as f:
+            botConfig["signBot"] = {}
+            botConfig["signBot"]["signValueRange"] = [10,100]
+            botConfig["signBot"]["signTimeRange"] = [0,0]
+            botConfig["signBot"]["signName"] = "积分"
+            botConfig["signText"] = [
+                "签到成功",
+                "本次签到获得 {{ newValue }} 点{{ signName }}",
+                "当前有 {{ totalValue }} 点{{ signName }}"
+            ]
+            botConfig["signText"]["signText_faile"] = [
+                "你今天已经在 {{ GroupName }}({{ GroupId }})签到过了，请不要重复签到~"
+            ]
+            botConfig["ui"] = {}
+            botConfig["ui"]["port"] = 9000
+            botConfig["owner"] = 2638239785
+            f.write(json.dumps(botConfig))
+
+
     bot.connect()

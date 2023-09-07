@@ -14,8 +14,8 @@ class MsgChainSource:
 class MsgChain:
     def __init__(self,inChain:list = None):
         self.msgChain = ([] if inChain is None else inChain)
-    def addTextMsg(self,content:str):
-        self.msgChain.append({"type":"Plain","text":content})
+    def addTextMsg(self,content:str,autoNewLine:bool = True):
+        self.msgChain.append({"type":"Plain","text":content + ("\n" if autoNewLine else "")})
     def addImg(self,imgPath:str):
         with open(imgPath,"rb") as f:
             img = f.read()

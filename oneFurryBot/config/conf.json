@@ -1,11 +1,19 @@
 {
-    "G1037505221": {
-        "enable": true
+    "signBot": {
+        "signValueRange":[10,100],
+        "signTimeRange":[0,0],
+        "signName":"积分",
+        "signText":[
+            "签到成功",
+            "本次签到获得 {{ newValue }} 点{{ signName }}",
+            "当前有 {{ totalValue }} 点{{ signName }}"
+        ],
+        "signText_faile":[
+            "你今天已经在 {{ GroupName }}({{ GroupId }}) 签到过了，请不要重复签到~"
+        ]
     },
-    "G781588673": {
-        "enable": true
+    "ui":{
+        "port": 9000
     },
-    "G1128689130": {
-        "enable": true
-    }
+    "owner":2638239785
 }
