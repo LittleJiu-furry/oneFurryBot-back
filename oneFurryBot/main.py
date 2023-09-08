@@ -202,12 +202,14 @@ async def systemInfo(data):
 @mBind.Friend_text("#关闭","#close")
 async def closeFunc(data):
     if(data.fromQQ == botConfig["owner"]):
+        msg = MsgChain()
+        msg.addTextMsg("已关闭")
         if(type(data) == GroupMessage):
             # 来自群里
-            await bot.sendGroupMsg(MsgChain().addTextMsg("已关闭"),data.fromGroup)
+            await bot.sendGroupMsg(msg,data.fromGroup)
         elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
             # 来自好友
-            await bot.sendFriendMsg(MsgChain().addTextMsg("已关闭"),data.fromQQ)
+            await bot.sendFriendMsg(msg,data.fromQQ)
         bot.close()
 
 
