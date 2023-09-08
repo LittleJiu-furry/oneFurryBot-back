@@ -24,7 +24,8 @@ class TypeBind:
 
 # 机器人基础类
 class Bot:
-    def __init__(self,vk:str,botQQ:int,eventBind:TypeBind):
+    def __init__(self,vk:str,botQQ:int,eventBind:TypeBind,baseURL:str):
+        self.baseURL = baseURL
         self.vk = vk
         self.botQQ = botQQ
         self.sessionKey = ""
@@ -33,7 +34,7 @@ class Bot:
         self.ws = WebSocket()
         self.loop = asyncio.new_event_loop()
     def connect(self):
-        self.ws.connect(f"ws://1.117.4.39:9008/all?verifyKey={self.vk}&qq={str(self.botQQ)}")
+        self.ws.connect(f"{self.baseURL}/all?verifyKey={self.vk}&qq={str(self.botQQ)}")
         self.ws_status = True
         asyncio.get_event_loop().run_until_complete(self._outData())
 
