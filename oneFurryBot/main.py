@@ -197,7 +197,8 @@ async def systemInfo(data):
     elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
         # 来自好友
         await bot.sendFriendMsg(msg,data.fromQQ)
-    
+
+# 关闭
 @mBind.Group_text("#关闭","#close")
 @mBind.Friend_text("#关闭","#close")
 async def closeFunc(data):
@@ -211,7 +212,6 @@ async def closeFunc(data):
             # 来自好友
             await bot.sendFriendMsg(msg,data.fromQQ)
         bot.close()
-
 
 
 
