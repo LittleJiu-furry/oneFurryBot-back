@@ -217,8 +217,12 @@ async def closeFunc(data):
 
 # 入口
 if __name__ == "__main__":
+    botAccount = {}
+    # 读取机器人账号配置
+    with open(getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
+        botAccount = json.load(f)
     # 初始化一个机器人实例
-    bot = Bot("Abyss-Reg031204",3235302005,event)
+    bot = Bot(botAccount["vk"],botAccount["account"],event)
     botConfig = {}
     # 将配置读入内存
     try:
