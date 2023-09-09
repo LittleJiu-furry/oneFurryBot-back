@@ -14,6 +14,9 @@ _about_me = {
     "version":"0.1-dev",
 }
 
+botAccount = {}
+botConfig = {}
+
 event = TypeBind() # 事件监听注册器
 mBind = MsgBind() # 针对于消息内容进行相应的注册器
 
@@ -233,7 +236,7 @@ async def reloadFunc(data)->bool:
         elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
             # 来自好友
             await bot.sendFriendMsg(msg,data.fromQQ)
-        main()
+
         msg.clearMsgChain()
         msg.addTextMsg("配置重载成功")
         if(type(data) == GroupMessage):
@@ -253,6 +256,7 @@ async def reloadFunc(data)->bool:
 
 # 读取配置
 def main():
+    global botAccount,botConfig
     # 读取机器人账号配置
     with open(getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
         botAccount = json.load(f)
@@ -284,8 +288,6 @@ def main():
 
 # 入口
 if __name__ == "__main__":
-    botAccount = {}
-    botConfig = {}
     main()
     bot = Bot(botAccount["vk"],botAccount["account"],event,botAccount["baseURL"])
     bot.connect()
