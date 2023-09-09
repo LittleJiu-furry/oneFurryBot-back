@@ -73,7 +73,7 @@ class Bot:
         _msg = {
             "sessionKey": self.sessionKey,
             "target": target,
-            "messageChain":msg.msgChain
+            "messageChain":msg.getMsgChain()
         }
         if(MsgId != None):
             _msg["quote"] = MsgId
@@ -84,10 +84,15 @@ class Bot:
         _msg = {
             "sessionKey": self.sessionKey,
             "target": group,
-            "messageChain":msg.msgChain
+            "messageChain":msg.getMsgChain()
         }
         if(MsgId != None):
             _msg["quote"] = MsgId
         self._putData(_msg,"sendGroupMessage")
+
+    
+
+
+
 
 

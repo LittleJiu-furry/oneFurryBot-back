@@ -80,7 +80,8 @@ async def sign(data:GroupMessage)->bool:
             f.write(json.dumps(conf))
     if(enable):
         # 开启了
-        _value = random.randint(10,100)
+        _valueRange = botConfig["signBot"]["signValueRange"]
+        _value = random.randint(_valueRange[0],_valueRange[1])
         date = time.localtime(data.msgChain.getSource().msgTime)
         try:
             with open(getPath("./config/sign.json"), mode="r+",encoding="utf-8") as f:
@@ -169,7 +170,7 @@ async def sign(data:GroupMessage)->bool:
 
 # 菜单
 @mBind.Group_text("#菜单","#menu")
-async def menu(data:GroupMessage):
+async def menu(data:GroupMessage)->bool:
     msg = MsgChain()
     msg.addTextMsg("=OneFurryBot=")
     msg.addTextMsg("#菜单 #menu 打开菜单")
@@ -178,30 +179,34 @@ async def menu(data:GroupMessage):
     msg.addTextMsg("机器人正在开发中，更多功能即将来临")
     msg.addTextMsg("=By LittleJiu=")
     await bot.sendGroupMsg(msg,data.fromGroup)
+    return ALLOW_NEXT
     
 # 系统信息 
 @mBind.Group_text("#系统信息","#system")
 @mBind.Friend_text("#系统信息","#system")
-async def systemInfo(data):
+async def systemInfo(data)->bool:
     msg = MsgChain()
-    msg.addTextMsg("=OneFurryBot=")
+    msg.addTextMsg("-=OneFurryBot=-")
     msg.addTextMsg("所用框架: Mirai")
     msg.addTextMsg(f'当前插件版本: {_about_me["version"]}')
     msg.addTextMsg(f'当前平台: {platform.system()}')
     msg.addTextMsg(f'平台版本信息: {platform.version()}')
     msg.addTextMsg(f'当前Python版本: {platform.python_version()}')
-    msg.addTextMsg("=By LittleJiu=")
+    _now = time.localtime(time.time())
+    msg.addTextMsg(f'当前系统时间: {time.strftime("%Y-%m-%d %H:%M:%S", _now)}')
+    msg.addTextMsg("-=By LittleJiu=-")
     if(type(data) == GroupMessage):
         # 来自群里
         await bot.sendGroupMsg(msg,data.fromGroup)
     elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
         # 来自好友
         await bot.sendFriendMsg(msg,data.fromQQ)
+    return ALLOW_NEXT
 
 # 关闭
 @mBind.Group_text("#关闭","#close")
 @mBind.Friend_text("#关闭","#close")
-async def closeFunc(data):
+async def closeFunc(data)->bool:
     if(data.fromQQ == botConfig["owner"]):
         msg = MsgChain()
         msg.addTextMsg("已关闭")
@@ -212,21 +217,45 @@ async def closeFunc(data):
             # 来自好友
             await bot.sendFriendMsg(msg,data.fromQQ)
         bot.close()
+    return ALLOW_NEXT
+
+
+# 重载配置
+@mBind.Group_text("#重载配置","#reload")
+@mBind.Friend_text("#重载配置","#reload")
+async def reloadFunc(data)->bool:
+    if(data.fromQQ == botConfig["owner"]):
+        msg = MsgChain()
+        msg.addTextMsg("正在重载配置...")
+        if(type(data) == GroupMessage):
+            # 来自群里
+            await bot.sendGroupMsg(msg,data.fromGroup)
+        elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
+            # 来自好友
+            await bot.sendFriendMsg(msg,data.fromQQ)
+        main()
+        msg.clearMsgChain()
+        msg.addTextMsg("配置重载成功")
+        if(type(data) == GroupMessage):
+            # 来自群里
+            await bot.sendGroupMsg(msg,data.fromGroup)
+        elif(type(data) == FriendMessage and data.fromQQ == botConfig["owner"]):
+            # 来自好友
+            await bot.sendFriendMsg(msg,data.fromQQ)
+    return ALLOW_NEXT
 
 
 
 
 
 
-# 入口
-if __name__ == "__main__":
-    botAccount = {}
+# ======程序入口======
+
+# 读取配置
+def main():
     # 读取机器人账号配置
     with open(getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
         botAccount = json.load(f)
-    # 初始化一个机器人实例
-    bot = Bot(botAccount["vk"],botAccount["account"],event,botAccount["baseURL"])
-    botConfig = {}
     # 将配置读入内存
     try:
         with open(getPath("./config/conf.json"),encoding="utf-8",mode="r+") as f:
@@ -250,6 +279,13 @@ if __name__ == "__main__":
             botConfig["ui"]["port"] = 9000
             botConfig["owner"] = 2638239785
             f.write(json.dumps(botConfig))
+    
 
 
+# 入口
+if __name__ == "__main__":
+    botAccount = {}
+    botConfig = {}
+    main()
+    bot = Bot(botAccount["vk"],botAccount["account"],event,botAccount["baseURL"])
     bot.connect()

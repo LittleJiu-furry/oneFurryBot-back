@@ -28,7 +28,6 @@ class MsgChain:
             # 为at添加空格
             self.addTextMsg(" ")
 
-
     async def getTextMsg(self):
         _msg = ""
         for msg in self.msgChain:
@@ -36,7 +35,6 @@ class MsgChain:
                 _msg += msg["text"]
             await asyncio.sleep(0)
         return _msg
-    
     async def getImgs(self):
         _imgs = []
         for msg in self.msgChain:
@@ -44,7 +42,6 @@ class MsgChain:
                 _imgs.append(msg["url"])
             await asyncio.sleep(0)
         return _imgs
-
     async def getQuote(self):
         _quote = {}
         for msg in self.msgChain:
@@ -64,7 +61,19 @@ class MsgChain:
         msg = self.msgChain[0]
         if msg["type"] == "Source":
             return MsgChainSource(msg)
-            
+    def getMsgChain(self)->list:
+        if self.msgChain == None: return []
+        _lastChain = self.msgChain[-1]
+        if(_lastChain["type"] == "Plain" and _lastChain["text"][-1] == "\n"):
+            # 处理掉最后一个换行符
+            self.msgChain[-1]["text"] = self.msgChain[-1]["text"][:-1]
+        return self.msgChain
+    def clearMsgChain(self):
+        self.msgChain = []
+    def deleteLastChain(self):
+        self.msgChain.pop()
+
+
 
 # 好友消息
 class FriendMessage:
