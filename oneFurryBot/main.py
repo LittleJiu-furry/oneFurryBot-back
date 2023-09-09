@@ -161,7 +161,7 @@ async def sign(data:GroupMessage)->bool:
                 for _text in botConfig["signBot"]["signText"]:
                     _text = str(_text).replace("{{ newValue }}",str(_value))
                     _text = str(_text).replace("{{ signName }}",str(botConfig["signBot"]["signName"]))
-                    _text = str(_text).replace("{{ totalValue }}",str(signData[f"U{str(data.fromQQ)}"]["signValue"]))
+                    _text = str(_text).replace("{{ totalValue }}",str(uconf[f"U{str(data.fromQQ)}"]["signValue"]))
                     msg.addTextMsg(_text)
 
                 await bot.sendGroupMsg(msg,data.fromGroup)
@@ -215,6 +215,9 @@ async def closeFunc(data):
 
 
 
+
+
+
 # 入口
 if __name__ == "__main__":
     botAccount = {}
@@ -222,7 +225,7 @@ if __name__ == "__main__":
     with open(getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
         botAccount = json.load(f)
     # 初始化一个机器人实例
-    bot = Bot(botAccount["vk"],botAccount["account"],event)
+    bot = Bot(botAccount["vk"],botAccount["account"],event,botAccount["baseURL"])
     botConfig = {}
     # 将配置读入内存
     try:

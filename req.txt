@@ -1,5 +1,6 @@
-websocket
 websocket-client
+websocket
 websockets
 uvicorn
 fastapi
+requests
