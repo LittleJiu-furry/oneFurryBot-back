@@ -6,6 +6,7 @@ import asyncio
 from msgtypes import *
 import requests
 import uvicorn
+import platform
 
 # 类型绑定器
 class TypeBind:
@@ -32,7 +33,12 @@ class Bot:
         self.ws_status = False
         self.event = eventBind
         self.ws = WebSocket()
+        if(platform.system() == "Linux"):
+            import uvloop
+            asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        
         self.loop = asyncio.new_event_loop()
+
     def connect(self):
         self.ws.connect(f"{self.baseURL}/all?verifyKey={self.vk}&qq={str(self.botQQ)}")
         self.ws_status = True

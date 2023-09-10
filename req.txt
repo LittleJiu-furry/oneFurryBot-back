@@ -5,3 +5,4 @@ uvicorn
 fastapi
 requests
 pillow
+uvloop
