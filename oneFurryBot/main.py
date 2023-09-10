@@ -110,7 +110,10 @@ async def sign(data:GroupMessage)->bool:
                         _userData["lastSignGroup_name"] = data.fromGroup_name
                         _userData["lastSignTimestamp"] = data.msgChain.getSource().msgTime
                         _userData["signValue"] += _value
-                        _userData["signDate"]["thisMonth"].append(date.tm_mday)
+                        if(date.tm_mon != lastSignData.tm_mon):
+                            _userData["signDate"]["thisMonth"] = [date.tm_mday]
+                        else:
+                            _userData["signDate"]["thisMonth"].append(date.tm_mday)
                         signData[f"U{str(data.fromQQ)}"] = _userData
                         f.seek(0,0)
                         f.truncate(0)
@@ -223,7 +226,6 @@ async def closeFunc(data)->bool:
             await bot.sendFriendMsg(msg,data.fromQQ)
         bot.close()
     return ALLOW_NEXT
-
 
 # 重载配置
 @mBind.Group_text("#重载配置","#reload")
