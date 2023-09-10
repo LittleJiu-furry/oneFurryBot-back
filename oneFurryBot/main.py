@@ -1,17 +1,18 @@
 from client import *
 from msgbind import MsgBind
-import ex
 import asyncio
 import opType
 import os
 import random
 import platform
+import io
+import base64
 
 _about_me = {
     "name": "oneFurryBot",
     "dec":"",
     "author":"狐小九Little_Jiu",
-    "version":"0.1-dev",
+    "version":"0.2-dev",
 }
 
 botAccount = {}
@@ -178,6 +179,7 @@ async def menu(data:GroupMessage)->bool:
     msg.addTextMsg("=OneFurryBot=")
     msg.addTextMsg("#菜单 #menu 打开菜单")
     msg.addTextMsg("#系统信息 #system 查看系统信息")
+    msg.addTextMsg("#我的信息 #me 获得你的一些信息")
     msg.addTextMsg("")
     msg.addTextMsg("机器人正在开发中，更多功能即将来临")
     msg.addTextMsg("=By LittleJiu=")
@@ -247,8 +249,83 @@ async def reloadFunc(data)->bool:
             await bot.sendFriendMsg(msg,data.fromQQ)
     return ALLOW_NEXT
 
+# 获取信息
+@mBind.Group_text("#我的信息","#me")
+@mBind.Friend_text("#我的信息","#me")
+async def getMe(data)->bool:
+    msg = MsgChain()
+    try:
+        with open(getPath("./config/sign.json"),mode="r",encoding="utf-8") as f:
+            userData = json.load(f)
+        try:
+            userData = userData[f"U{data.fromQQ}"]
+            if(type(data) == GroupMessage):
+                # 来自群里
+                msg.addAt(data.fromQQ)
+            msg.addTextMsg(f'总积分: {userData["signValue"]}')
+            msg.addTextMsg(f'最后一次签到在 {userData["lastSignGroup_name"]}({userData["lastSignGroup"]})')
+            msg.addTextMsg(f'签到时间: {time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(userData["lastSignTimestamp"]))}')
 
+            import calendar as cal
+            from PIL import Image, ImageDraw, ImageFont
 
+            now = time.localtime(time.time())
+            cal.setfirstweekday(6)
+            monthStr = cal.month(now.tm_year,now.tm_mon)
+            signedDay = userData["signDate"]["thisMonth"]
+            # 对文字进行处理
+            monthStrList = monthStr.split("\n")
+            imageList = []
+            firstLine = True
+            for raw in monthStrList[1:]:
+                _indexList = []
+                for index in range(0,len(raw),3):
+                    word = raw[index:index+2]
+                    baseSize = (40,40)
+                    if(firstLine):
+                        backColor = (255,255,255)
+                    else:
+                        if(word != "  " and int(word) in signedDay):
+                            backColor = (0,255,0)
+                        else:
+                            backColor = (255,255,255)
+                    _img = Image.new("RGB", baseSize, backColor)
+                    _dr = ImageDraw.Draw(_img)
+                    font = ImageFont.truetype("arial.ttf", 25)
+                    x1,y1,x2,y2 = _dr.textbbox((0,0),word,font=font)
+                    _dr.text(((baseSize[0]-x2)/2,(baseSize[1]-y2)/2),word,font=font, fill=(0, 0, 0))
+                    _indexList.append(_img)
+                firstLine = False
+                if(len(_indexList) != 0):
+                    imageList.append(_indexList)
+            image = Image.new("RGB", (280,len(imageList) * 40), (255, 255, 255))
+            dr = ImageDraw.Draw(image)
+            for rawImageListIndex in range(len(imageList)):
+                for imgIndex in range(len(imageList[rawImageListIndex])):
+                    img = imageList[rawImageListIndex][imgIndex]
+                    image.paste(img, (40 * imgIndex,40 * rawImageListIndex))
+            ioBytes = io.BytesIO()
+            image.save(ioBytes,format="png")
+            imgBase64 = base64.b64encode(ioBytes.getvalue()).decode()
+            msg.addTextMsg("签到日历")
+            msg.addImg_Base64(imgBase64)
+
+        except KeyError:
+            if(type(data) == GroupMessage):
+                # 来自群里
+                msg.addAt(data.fromQQ)
+    except FileNotFoundError:
+        if(type(data) == GroupMessage):
+            # 来自群里
+            msg.addAt(data.fromQQ)
+    if(type(data) == GroupMessage):
+        # 来自群里
+        await bot.sendGroupMsg(msg,data.fromGroup)
+    elif(type(data) == FriendMessage):
+        # 来自好友
+        await bot.sendFriendMsg(msg,data.fromQQ)
+    return ALLOW_NEXT
+        
 
 
 

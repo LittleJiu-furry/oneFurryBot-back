@@ -27,6 +27,8 @@ class MsgChain:
         if(space):
             # 为at添加空格
             self.addTextMsg(" ")
+    def addImg_Base64(self,imgBase64:str):
+        self.msgChain.append({"type":"Image","base64":imgBase64})
 
     async def getTextMsg(self):
         _msg = ""
