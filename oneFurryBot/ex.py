@@ -59,9 +59,11 @@ def writeUserData(userDict:userDataClass,user_id:str):
     try:
         with open(getPath("./config/sign.json"),mode="r+",encoding="utf-8") as f:
             _old = json.load(f) # 读取并暂存旧数据
+            _new = _old.copy()
+            _new.update(new_data)
             f.seek(0,0)
             f.truncate(0)
-            f.write(json.dumps(new_data,ensure_ascii=False,indent=4))
+            f.write(json.dumps(_new,ensure_ascii=False,indent=4))
     except FileNotFoundError:
         # 没有找到配置文件
         with open(getPath("./config/sign.json"),mode="a+",encoding="utf-8") as f:

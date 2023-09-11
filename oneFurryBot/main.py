@@ -181,6 +181,7 @@ async def menu(data:GroupMessage)->bool:
     msg.addTextMsg("#菜单 #menu 打开菜单")
     msg.addTextMsg("#系统信息 #system 查看系统信息")
     msg.addTextMsg("#我的信息 #me 获得你的一些信息")
+    msg.addTextMsg("#补签 [日期] 进行补签，每次补签扣除30分")
     msg.addTextMsg("")
     msg.addTextMsg("机器人正在开发中，更多功能即将来临")
     msg.addTextMsg("=By LittleJiu=")
@@ -344,7 +345,69 @@ async def getMe(data)->bool:
     await bot.sendGroupMsg(msg,data.fromGroup)
     return ALLOW_NEXT
 
+# 补签功能
+@mBind.Group_text("#补签 {day}","#补签")
+@mBind.Friend_text("#补签 {day}","#补签")
+async def signDay(data,args:dict = None):
+    msg = MsgChain()
+    if(args == None):
+        # 没有指定日期
+        if(type(data) == GroupMessage):
+            msg.addAt(data.fromQQ)
+            msg.addTextMsg("请指定日期")
+            msg.addTextMsg("格式为 #补签 {日期}")
+            await bot.sendGroupMsg(msg,data.fromGroup)
+        elif(type(data) == FriendMessage):
+            msg.addTextMsg("请指定日期")
+            msg.addTextMsg("格式为 #补签 {日期}")
+            await bot.sendFriendMsg(msg,data.fromQQ)
+        return ALLOW_NEXT
+    else:
+        _day = int(args["day"])
+        # 获得本月日期的最大值
+        import calendar as cal
+        _now = time.localtime(time.time())
+        _firstWeekDay,_maxDay = cal.monthrange(_now.tm_year,_now.tm_mon)
+        if(1 <= _day <= _maxDay and 1 <= _day < _now.tm_mday):
+            userData = ex.getUserData(data.fromQQ)
+            if(_day in userData.thisMonth):
+                # 已经签过
+                if(type(data) == GroupMessage):
+                    msg.addAt(data.fromQQ)
+                msg.addTextMsg("当天已签到，不允许补签")
+                if(type(data) == GroupMessage):
+                    await bot.sendGroupMsg(msg,data.fromGroup)
+                elif(type(data) == FriendMessage):
+                    await bot.sendFriendMsg(msg,data.fromQQ)
+                return ALLOW_NEXT
+            userData.thisMonth.append(_day)
+            userData.signValue -= botConfig["signBot"]["reSignCutValue"]
+            valueRange = botConfig["signBot"]["signValueRange"]
+            _value = random.randint(valueRange[0],valueRange[1])
+            ex.writeUserData(userData,data.fromQQ)
+            if(type(data) == GroupMessage):
+                msg.addAt(data.fromQQ)
+                msg.addTextMsg("补签成功")
+                msg.addTextMsg(f'补签已经扣除{botConfig["signBot"]["reSignCutValue"]}点{botConfig["signBot"]["signName"]}')
+                msg.addTextMsg(f'补签获得了{_value}点{botConfig["signBot"]["signName"]}')
+                await bot.sendGroupMsg(msg,data.fromGroup)
+            elif(type(data) == FriendMessage):
+                msg.addTextMsg("补签成功")
+                msg.addTextMsg(f'补签已经扣除{botConfig["signBot"]["reSignCutValue"]}点{botConfig["signBot"]["signName"]}')
+                msg.addTextMsg(f'补签获得了{_value}点{botConfig["signBot"]["signName"]}')
+                await bot.sendFriendMsg(msg,data.fromQQ)
+        else:
+            if(type(data) == GroupMessage):
+                msg.addAt(data.fromQQ)
+            
+            msg.addTextMsg("补签失败")
+            msg.addTextMsg("仅允许在本月份已经过但未签到的日期补签")
 
+            if(type(data) == GroupMessage):
+                await bot.sendGroupMsg(msg,data.fromGroup)
+            elif(type(data) == FriendMessage):
+                await bot.sendFriendMsg(msg,data.fromQQ)
+    return ALLOW_NEXT
 
 
 
@@ -371,14 +434,15 @@ def main():
             botConfig["signBot"]["signValueRange"] = [10,100]
             botConfig["signBot"]["signTimeRange"] = [0,0]
             botConfig["signBot"]["signName"] = "积分"
-            botConfig["signText"] = [
+            botConfig["signBot"]["signText"] = [
                 "签到成功",
                 "本次签到获得 {{ newValue }} 点{{ signName }}",
                 "当前有 {{ totalValue }} 点{{ signName }}"
             ]
-            botConfig["signText"]["signText_faile"] = [
+            botConfig["signBot"]["signText_faile"] = [
                 "你今天已经在 {{ GroupName }}({{ GroupId }})签到过了，请不要重复签到~"
             ]
+            botConfig["signBot"]["reSignCutValue"] = 30
             botConfig["ui"] = {}
             botConfig["ui"]["port"] = 9000
             botConfig["owner"] = 2638239785
