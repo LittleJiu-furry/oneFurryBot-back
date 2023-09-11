@@ -5,7 +5,6 @@ import re
 import asyncio
 from msgtypes import *
 import requests
-import uvicorn
 import platform
 
 # 类型绑定器

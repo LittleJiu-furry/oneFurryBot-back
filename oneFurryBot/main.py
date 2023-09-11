@@ -2,11 +2,11 @@ from client import *
 from msgbind import MsgBind
 import asyncio
 import opType
-import os
 import random
 import platform
 import io
 import base64
+import ex
 
 _about_me = {
     "name": "oneFurryBot",
@@ -21,9 +21,7 @@ botConfig = {}
 event = TypeBind() # 事件监听注册器
 mBind = MsgBind() # 针对于消息内容进行相应的注册器
 
-# 用于处理文件路径
-def getPath(*path):
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), *path))
+
 
 
 # ============事件监听函数============
@@ -62,7 +60,7 @@ async def sign(data:GroupMessage)->bool:
     enable = False
     conf = {}
     try:
-        with open(getPath("./config/Gconf.json"), mode="r+",encoding="utf-8") as f:
+        with open(ex.getPath("./config/Gconf.json"), mode="r+",encoding="utf-8") as f:
             f.seek(0,0)
             conf = json.load(f)
             try:
@@ -77,7 +75,7 @@ async def sign(data:GroupMessage)->bool:
                 f.write(json.dumps(conf))
     except FileNotFoundError:
         # 配置文件不存在
-        with open(getPath("./config/Gconf.json"), mode="a+",encoding="utf-8") as f:
+        with open(ex.getPath("./config/Gconf.json"), mode="a+",encoding="utf-8") as f:
             conf = {}
             conf[f"G{str(data.fromGroup)}"] = {"enable": False}
             enable = False
@@ -88,7 +86,7 @@ async def sign(data:GroupMessage)->bool:
         _value = random.randint(_valueRange[0],_valueRange[1])
         date = time.localtime(data.msgChain.getSource().msgTime)
         try:
-            with open(getPath("./config/sign.json"), mode="r+",encoding="utf-8") as f:
+            with open(ex.getPath("./config/sign.json"), mode="r+",encoding="utf-8") as f:
                 signData = json.load(f)
                 try:
                     _userData = signData[f"U{str(data.fromQQ)}"]
@@ -149,7 +147,7 @@ async def sign(data:GroupMessage)->bool:
                             msg.addTextMsg(_text)
                     await bot.sendGroupMsg(msg,data.fromGroup)
         except FileNotFoundError:
-            with open(getPath("./config/sign.json"), mode="a+",encoding="utf-8") as f:
+            with open(ex.getPath("./config/sign.json"), mode="a+",encoding="utf-8") as f:
                 # 没有这个文件
                 # 说明还没有任何人签到过
                 uconf = {                    
@@ -257,7 +255,7 @@ async def reloadFunc(data)->bool:
 async def getMe(data)->bool:
     msg = MsgChain()
     try:
-        with open(getPath("./config/sign.json"),mode="r",encoding="utf-8") as f:
+        with open(ex.getPath("./config/sign.json"),mode="r",encoding="utf-8") as f:
             userData = json.load(f)
         try:
             userData = userData[f"U{data.fromQQ}"]
@@ -279,6 +277,7 @@ async def getMe(data)->bool:
             monthStrList = monthStr.split("\n")
             imageList = []
             firstLine = True
+            font = ImageFont.truetype(ex.getPath("./imgFont.ttf"),25)
             for raw in monthStrList[1:]:
                 _indexList = []
                 for index in range(0,len(raw),3):
@@ -291,21 +290,31 @@ async def getMe(data)->bool:
                             backColor = (0,255,0)
                         else:
                             backColor = (255,255,255)
+                    word = word.replace(" ","") # 删除其中的空格
                     _img = Image.new("RGB", baseSize, backColor)
                     _dr = ImageDraw.Draw(_img)
-                    font = ImageFont.truetype("arial.ttf", 25)
                     x1,y1,x2,y2 = _dr.textbbox((0,0),word,font=font)
                     _dr.text(((baseSize[0]-x2)/2,(baseSize[1]-y2)/2),word,font=font, fill=(0, 0, 0))
                     _indexList.append(_img)
                 firstLine = False
                 if(len(_indexList) != 0):
                     imageList.append(_indexList)
-            image = Image.new("RGB", (280,len(imageList) * 40), (255, 255, 255))
+                await asyncio.sleep(0)
+            # 构造标题
+            title = monthStrList[0]
+            _title = Image.new("RGB", (280,40), (255, 255, 255))
+            _dr = ImageDraw.Draw(_title)
+            x1,y1,x2,y2 = _dr.textbbox((0,0),title,font=font)
+            _dr.text(((280-x2)/2,(40-y2)/2),title,font=font, fill=(0, 0, 0))
+            image = Image.new("RGB", (280,(len(imageList) + 1)* 40), (255, 255, 255))
             dr = ImageDraw.Draw(image)
+            image.paste(_title, (0,0))
             for rawImageListIndex in range(len(imageList)):
                 for imgIndex in range(len(imageList[rawImageListIndex])):
                     img = imageList[rawImageListIndex][imgIndex]
-                    image.paste(img, (40 * imgIndex,40 * rawImageListIndex))
+                    image.paste(img, (40 * imgIndex,40 * (rawImageListIndex + 1)))
+                    await asyncio.sleep(0)
+                await asyncio.sleep(0)
             ioBytes = io.BytesIO()
             image.save(ioBytes,format="png")
             imgBase64 = base64.b64encode(ioBytes.getvalue()).decode()
@@ -316,6 +325,7 @@ async def getMe(data)->bool:
             if(type(data) == GroupMessage):
                 # 来自群里
                 msg.addAt(data.fromQQ)
+                msg.addTextMsg("你的数据有误，暂时无法读取，如果多次遇到此问题，请提交反馈")
     except FileNotFoundError:
         if(type(data) == GroupMessage):
             # 来自群里
@@ -327,7 +337,18 @@ async def getMe(data)->bool:
         # 来自好友
         await bot.sendFriendMsg(msg,data.fromQQ)
     return ALLOW_NEXT
-        
+  
+
+    msg = MsgChain()
+    msg.addTextMsg(f'获得参数 arg: {kwargs["arg"]}')
+    await bot.sendGroupMsg(msg,data.fromGroup)
+    return ALLOW_NEXT
+
+
+
+
+
+
 
 
 
@@ -337,15 +358,15 @@ async def getMe(data)->bool:
 def main():
     global botAccount,botConfig
     # 读取机器人账号配置
-    with open(getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
+    with open(ex.getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
         botAccount = json.load(f)
     # 将配置读入内存
     try:
-        with open(getPath("./config/conf.json"),encoding="utf-8",mode="r+") as f:
+        with open(ex.getPath("./config/conf.json"),encoding="utf-8",mode="r+") as f:
             botConfig = json.load(f)
     except FileNotFoundError:
         # 文件不存在,将进行创建
-        with open(getPath("./config/conf.json"),encoding="utf-8",mode="a+") as f:
+        with open(ex.getPath("./config/conf.json"),encoding="utf-8",mode="a+") as f:
             botConfig["signBot"] = {}
             botConfig["signBot"]["signValueRange"] = [10,100]
             botConfig["signBot"]["signTimeRange"] = [0,0]
@@ -363,8 +384,6 @@ def main():
             botConfig["owner"] = 2638239785
             f.write(json.dumps(botConfig))
     
-
-
 # 入口
 if __name__ == "__main__":
     main()
