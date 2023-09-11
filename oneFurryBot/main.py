@@ -384,6 +384,7 @@ async def signDay(data,args:dict = None):
             userData.signValue -= botConfig["signBot"]["reSignCutValue"]
             valueRange = botConfig["signBot"]["signValueRange"]
             _value = random.randint(valueRange[0],valueRange[1])
+            userData.signValue += _value
             ex.writeUserData(userData,data.fromQQ)
             if(type(data) == GroupMessage):
                 msg.addAt(data.fromQQ)
