@@ -91,7 +91,7 @@ class MsgBind:
                     grepList = grep.groups()
                     kwargs = {}
                     for args in grepList:
-                        kwargs[i[grepList.index(args)]] = args
+                        kwargs[i[grepList.index(args)]] = args[1:]
                     if(await func(_data,kwargs) == False):
                         return
                 else:
@@ -130,7 +130,7 @@ class MsgBind:
                     grepList = grep.groups()
                     kwargs = {}
                     for args in grepList:
-                        kwargs[i[grepList.index(args)]] = args
+                        kwargs[i[grepList.index(args)]] = args[1:]
                     if(await func(_data,kwargs) == False):
                         return
                 else:

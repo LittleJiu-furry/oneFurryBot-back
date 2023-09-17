@@ -410,6 +410,56 @@ async def signDay(data,args:dict = None):
                 await bot.sendFriendMsg(msg,data.fromQQ)
     return ALLOW_NEXT
 
+# 开关设置
+@mBind.Group_text("#开启","#enable")
+@mBind.Friend_text("#开启 {group}","#enable {group}")
+async def enableGroup(data,args:dict = None):
+    msg = MsgChain()
+    if(data.fromQQ == botConfig["owner"]):
+        # 确保是主人在操作
+        if(args == None):
+            # 指令来自群
+            msg.addAt(data.fromQQ)
+            group = data.fromGroup
+        else:
+            group = args["group"]
+        
+        try:
+            with open(ex.getPath("./config/Gconf.json"),mode="r+",encoding="utf-8") as f:
+                _conf = json.load(f)
+                try:
+                    nowStatus = _conf[f'G{group}']["enable"]
+                    if(nowStatus):
+                        msg.addTextMsg("当前群已开启,请不要重复开启")
+                    else:
+                        in_data = {f'G{group}':{"enable":True}}
+                        _conf.update(in_data)
+                        f.seek(0,0)
+                        f.truncate(0)
+                        f.write(json.dumps(_conf,indent=4,ensure_ascii=False))
+                        msg.addTextMsg("已开启")
+                except KeyError:
+                    # 说明配置文件中不存在当前需求的配置项
+                    in_data = {f'G{group}':{"enable":True}}
+                    _conf.update(in_data)
+                    f.seek(0,0)
+                    f.truncate(0)
+                    f.write(json.dumps(_conf,indent=4,ensure_ascii=False))
+                    msg.addTextMsg("已开启")
+        except FileNotFoundError:
+            with open(ex.getPath("./config/Gconf.json"),mode="a+",encoding="utf-8") as f:
+                new_data = {f'G{group}':{"enable":True}}
+                msg.addTextMsg("已开启")
+                f.write(json.dumps(new_data,indent=4,ensure_ascii=False))
+
+        if(type(data) == GroupMessage):
+            await bot.sendGroupMsg(msg,data.fromGroup)
+        elif(type(data) == FriendMessage):
+            await bot.sendFriendMsg(msg,data.fromQQ)
+    return ALLOW_NEXT
+
+
+
 
 
 
@@ -424,7 +474,7 @@ def main():
     # 读取机器人账号配置
     with open(ex.getPath("./config/bot.json"),mode="r",encoding="utf-8") as f:
         botAccount = json.load(f)
-    # 将配置读入内存
+    # 将配置读入内存,读取botConfig
     try:
         with open(ex.getPath("./config/conf.json"),encoding="utf-8",mode="r+") as f:
             botConfig = json.load(f)
@@ -448,7 +498,9 @@ def main():
             botConfig["ui"]["port"] = 9000
             botConfig["owner"] = 2638239785
             f.write(json.dumps(botConfig))
-    
+            
+
+
 # 入口
 if __name__ == "__main__":
     main()
