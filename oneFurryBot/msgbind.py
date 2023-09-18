@@ -89,10 +89,18 @@ class MsgBind:
                 grep = re.match(p,pat)
                 if(grep is not None):
                     grepList = grep.groups()
-                    kwargs = {}
+                    # 构造预参数字典
+                    prekwargs = {}
                     for args in grepList:
-                        kwargs[i[grepList.index(args)]] = args[1:]
-                    if(await func(_data,kwargs) == False):
+                        prekwargs[i[grepList.index(args)]] = args[1:]
+                    kwargs = {}
+                    for args in func.__code__.co_varnames[1:func.__code__.co_argcount]:
+                        if(args not in prekwargs.keys()):
+                            kwargs[args] = None
+                        else:
+                            kwargs[args] = prekwargs[args]
+                        await asyncio.sleep(0)
+                    if(await func(_data,**kwargs) == False):
                         return
                 else:
                     continue
@@ -128,10 +136,17 @@ class MsgBind:
                 grep = re.match(p,pat)
                 if(grep is not None):
                     grepList = grep.groups()
-                    kwargs = {}
+                    prekwargs = {}
                     for args in grepList:
-                        kwargs[i[grepList.index(args)]] = args[1:]
-                    if(await func(_data,kwargs) == False):
+                        prekwargs[i[grepList.index(args)]] = args[1:]
+                    kwargs = {}
+                    for args in func.__code__.co_varnames[1:func.__code__.co_argcount]:
+                        if(args not in prekwargs.keys()):
+                            kwargs[args] = None
+                        else:
+                            kwargs[args] = prekwargs[args]
+                        await asyncio.sleep(0)
+                    if(await func(_data,**kwargs) == False):
                         return
                 else:
                     continue

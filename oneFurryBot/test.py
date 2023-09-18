@@ -1,13 +1,8 @@
+async def abc(test):
+    # print(test2)
+    a = 0
+    pass
 
-test = {
-    "abc":{
-        "c":1
-    },
-    "bcd":12344
-}
 
-ta = test
-
-ta.update({"dhj":"1234"})
-
-print(test)
+# abc(**{"test":123,"a":None,"b":None})
+print(abc.__code__.co_varnames[:abc.__code__.co_argcount])
