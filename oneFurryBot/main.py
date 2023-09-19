@@ -7,6 +7,7 @@ import platform
 import io
 import base64
 import ex
+from urllib.parse import quote
 
 _about_me = {
     "name": "oneFurryBot",
@@ -177,14 +178,82 @@ async def signDay(data,day):
 
 # ==========宠物系统============
 
-# # 领养宠物
-# @mBind.Group_text("#领养宠物","#pet")
-# @mBind.Friend_text("#领养宠物","#pet")
-# async def getNewPet(data,args):
-#     # 创建一个新的宠物信息
-#     ex.createPet(data.fromQQ)
+# 领养宠物
+@mBind.Group_text("#领养宠物","#领养宠物 {name}")
+@mBind.Friend_text("#领养宠物","#领养宠物 {name}")
+async def getNewPet(data,name:str):
+    groupFrom = False
+    msg = MsgChain()
+    if(type(data) == GroupMessage):
+        msg.addAt(data.fromQQ)
+        groupFrom = True
+    
+    _mePet = ex.getPetInfo(data.fromQQ)
+    if(_mePet != None):
+        msg.addTextMsg("你已经有宠物啦，再领养一个养的过来嘛(?)")
+        if(groupFrom):
+            await bot.sendGroupMsg(msg,data.fromGroup,data.msgChain.getSource().msgId)
+        else:
+            await bot.sendFriendMsg(msg,data.fromQQ,data.msgChain.getSource().msgId)
+        return ALLOW_NEXT
+    _pet = ex.createPet(data.fromQQ,name)
+    msg.addTextMsg("-=OneFurryBot=-")
+    msg.addTextMsg(f"你成功领养了[{_pet.name}]")
+    msg.addTextMsg(f"[{_pet.name}]的物种为：{_pet.family}")
+    msg.addTextMsg(f"[{_pet.name}]预计每日最少需要花费{_pet.minNeed}积分投喂")
+    msg.addTextMsg(f"请好好爱护Ta哦~")
 
+    if(groupFrom):
+        await bot.sendGroupMsg(msg,data.fromGroup)
+    else:
+        await bot.sendFriendMsg(msg,data.fromQQ)
+    return ALLOW_NEXT
 
+# 投喂宠物
+@mBind.Group_text("#喂养宠物")
+@mBind.Friend_text("#喂养宠物")
+async def feedPet(data):
+    groupFrom = False
+    msg = MsgChain()
+    if(type(data) == GroupMessage):
+        msg.addAt(data.fromQQ)
+        groupFrom = True
+
+    _mePet = ex.getPetInfo(data.fromQQ)
+    if(_mePet == None):
+        msg.addTextMsg("你还没有宠物，先去领养一个吧~")
+        if(groupFrom):
+            await bot.sendGroupMsg(msg,data.fromGroup,data.msgChain.getSource().msgId)
+        else:
+            await bot.sendFriendMsg(msg,data.fromQQ,data.msgChain.getSource().msgId)
+        return ALLOW_NEXT
+    
+    if(_mePet.dead):
+        msg.addTextMsg("你的宠物不幸死掉了，请先安置好Ta吧")
+        if(groupFrom):
+            await bot.sendGroupMsg(msg,data.fromGroup,data.msgChain.getSource().msgId)
+        else:
+            await bot.sendFriendMsg(msg,data.fromQQ,data.msgChain.getSource().msgId)
+        return ALLOW_NEXT
+    
+    # 判断今天是否投喂过了
+    _lastEat = time.localtime(_mePet.lastEatTime)
+    _now = time.localtime(data.msgChain.getSource().msgTime)
+    if(_lastEat.tm_yday == _now.tm_yday):
+        msg.addTextMsg("今天已经投喂过了，明天再来吧~")
+        if(groupFrom):
+            await bot.sendGroupMsg(msg,data.fromGroup)
+        else:
+            await bot.sendFriendMsg(msg,data.fromQQ)
+        return ALLOW_NEXT
+    _minNeed = _mePet.minNeed
+    _thisNeed = _minNeed + random.choice(range(0,51))
+    
+    # 修改宠物属性
+    _mePet.lastEatTime = data.msgChain.getSource().msgTime
+    _mePet.deadValue = _mePet.deadValue - 1 if _mePet.deadValue > 0 else 0
+    msg.addTextMsg(f"投喂成功，")
+    
 
 
 # ==========杂项===========
@@ -198,12 +267,28 @@ async def menu(data:GroupMessage)->bool:
     msg.addTextMsg("#系统信息 #system 查看系统信息")
     msg.addTextMsg("#我的信息 #me 获得你的一些信息")
     msg.addTextMsg("#补签 [日期] 进行补签，每次补签扣除30分")
+    msg.addTextMsg("#宠物 宠物相关菜单")
     msg.addTextMsg("")
-    msg.addTextMsg("机器人正在开发中，更多功能即将来临")
     msg.addTextMsg("-=By LittleJiu=-")
     await bot.sendGroupMsg(msg,data.fromGroup)
     return ALLOW_NEXT
-    
+
+@mBind.Group_text("#宠物")
+async def pet(data:GroupMessage)->bool:
+    msg = MsgChain()
+    msg.addTextMsg("-=OneFurryBot=-")
+    msg.addTextMsg("[宠物系统]")
+    msg.addTextMsg("")
+    msg.addTextMsg("#领养宠物 [名字] 领养一个宠物")
+    msg.addTextMsg("")
+    msg.addTextMsg("-=By LittleJiu=-")
+    await bot.sendGroupMsg(msg,data.fromGroup)
+    return ALLOW_NEXT
+
+
+
+
+
 # 系统信息 
 @mBind.Group_text("#系统信息","#system")
 @mBind.Friend_text("#系统信息","#system")
@@ -355,10 +440,24 @@ async def getMe(data)->bool:
         await bot.sendFriendMsg(msg,data.fromQQ)
     return ALLOW_NEXT
 
-
-
-
-
+# 点歌(仍需要修改)
+@mBind.Group_text("点歌 {name}")
+async def searchMusic(data:GroupMessage,name:str):
+    msg = MsgChain()
+    r = requests.post(f"http://www.xmsj.org/?name={name}&type=netease",headers={
+        "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest"
+    },data=f"input={quote(name)}&filter=name&type=netease&page=1")
+    ret = json.loads(r.content)
+    if(ret["code"] == 200):
+        music = musicInfo()
+        music.title = ret["data"][0]["title"]
+        music.musicUrl = ret["data"][0]["url"]
+        music.jumpUrl = ret["data"][0]["link"]
+        music.pictureUrl = ret["data"][0]["pic"]
+        msg.addMusicShare(music)
+    
+    await bot.sendGroupMsg(msg,data.fromGroup)
 
 
 

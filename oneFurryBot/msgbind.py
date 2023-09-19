@@ -106,7 +106,10 @@ class MsgBind:
                     continue
             else:
                 if(re.match(p,pat) != None):
-                    if(await func(_data) == False):
+                    kwargs = {}
+                    for args in func.__code__.co_varnames[1:func.__code__.co_argcount]:
+                        kwargs[args] = None
+                    if(await func(_data,**kwargs) == False):
                         return
             await asyncio.sleep(0)
 
@@ -152,7 +155,10 @@ class MsgBind:
                     continue
             else:
                 if(re.match(p,pat) != None):
-                    if(await func(_data) == False):
+                    kwargs = {}
+                    for args in func.__code__.co_varnames[1:func.__code__.co_argcount]:
+                        kwargs[args] = None
+                    if(await func(_data,**kwargs) == False):
                         return
             await asyncio.sleep(0)
 

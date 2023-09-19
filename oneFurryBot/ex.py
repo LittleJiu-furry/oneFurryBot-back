@@ -13,7 +13,7 @@ class userSignDataClass:
     lastSignTimestamp = 0
     signValue = 0
     thisMonth = []
-    def __init__(self,_data:dict == None) -> None:
+    def __init__(self,_data:dict = None) -> None:
         if(_data is not None and _data != {}):
             self.lastSignGroup =_data["lastSignGroup"]
             self.lastSignGroup_name = _data["lastSignGroup_name"]
@@ -65,6 +65,8 @@ class PetInfo:
     lastEatTime:int # 最后投喂时间
     funLevel:int # 好感等级
     funValue:int # 好感值
+    dead:bool # 是否已死亡
+    deadValue:int # 死亡值
     def __init__(self,_data:dict == None) -> None:
         if(_data is not None and _data != {}):
             self.name = _data["name"]
@@ -74,6 +76,8 @@ class PetInfo:
             self.family = _data["family"]
             self.minNeed = _data["minNeed"]
             self.lastEatTime = _data["lastEatTime"]
+            self.dead = _data["dead"]
+            self.deadValue = _data["deadValue"]
 
 # 物种信息
 class petFamilyInfo:
@@ -141,7 +145,10 @@ def writeUserData(userDict:userSignDataClass,user_id:str):
 def getGroupEnable(group_id:str,menu_name:str)->bool:
     with open(getPath("./config/Gconf.json"),mode="a+",encoding="utf-8") as f:
         f.seek(0,0)
-        _data = json.load(f)
+        try:
+            _data = json.load(f)
+        except json.JSONDecodeError:
+            _data = {}
         if(f'G{group_id}' in _data):
             if(menu_name in _data[f'G{group_id}']):
                 return _data[f'G{group_id}'][menu_name]
@@ -172,8 +179,14 @@ def getRobotConf()->botConfig:
 def getPetInfo(user_id:str)->PetInfo:
     with open(getPath("./config/pet.json"),mode="a+",encoding="utf-8") as f:
         f.seek(0,0)
-        _data = json.load(f)
-        return PetInfo(_data)
+        try:
+            _data = json.load(f)
+        except:
+            _data = {}
+        if(f'U{user_id}' in _data):
+            return PetInfo(_data[f"U{user_id}"])
+        else:
+            return None
 
 # 随机字符
 def randomStr()->str:
@@ -191,17 +204,25 @@ def getPetFamilyInfo(family:str)->petFamilyInfo:
 def randomPetFamily() -> str:
     with open(getPath("./config/petsFamily.json"),mode="a+",encoding="utf-8") as f:
         f.seek(0,0)
-        _data = json.load(f)
+        try:
+            _data = json.load(f)
+        except json.JSONDecodeError:
+            _data = {}
         import random
         allFamilys = list(_data.keys())
         return random.choice(allFamilys)
 
 # 创建一个宠物
-def createPet(user_id:str,pet_name:str == None)->PetInfo:
+def createPet(user_id:str,pet_name:str = None)->PetInfo:
     with open(getPath("./config/pet.json"),mode="a+",encoding="utf-8") as f:
         f.seek(0,0)
-        _data = json.load(f)
+        try:
+            _data = json.load(f)
+        except json.JSONDecodeError:
+            _data = {}
         _petFamily = randomPetFamily()
+        import random
+        _minNeed = random.randint(50,300)
         import time
         _pet = {
             "name": pet_name if pet_name is not None else f"{_petFamily}{randomStr()[:6]}",
@@ -209,18 +230,45 @@ def createPet(user_id:str,pet_name:str == None)->PetInfo:
             "level": 1,
             "exp": 0,
             "family": _petFamily,
-            "minNeed": 100,
+            "minNeed": _minNeed,
             "lastEatTime": int(time.time()),
             "funLevel": 1,
             "funValue": 0,
+            "dead":False,
+            "deadValue":0
         }
         _data.update({f'U{user_id}': _pet})
         f.seek(0,0)
         f.truncate(0)
         f.write(json.dumps(_data,ensure_ascii=False))
         return PetInfo(_pet)
+
+# 修改宠物属性
+def writePet(user_id:str,petInfo:PetInfo):
+    with open(getPath("./config/pet.json"),mode="a+",encoding="utf-8") as f:
+        f.seek(0,0)
+        try:
+            _data = json.load(f)
+        except json.JSONDecodeError:
+            _data = {}
+        _pet = {
+            "name": petInfo.name,
+            "level": petInfo.level,
+            "exp": petInfo.exp,
+            "lastEatTime": petInfo.lastEatTime,
+            "funLevel": petInfo.funLevel,
+            "funValue": petInfo.funValue,
+            "dead":petInfo.dead,
+            "deadValue":petInfo.deadValue
+        }
+        _data.update({f'U{user_id}': _pet})
+        f.seek(0,0)
+        f.truncate(0)
+        f.write(json.dumps(_data,ensure_ascii=False))
         
-        
+
+
+
 
 
 

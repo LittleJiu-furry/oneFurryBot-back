@@ -10,6 +10,14 @@ class MsgChainSource:
         self.msgTime = inSorce["time"]
         self.msgId = inSorce["id"]
 
+class musicInfo:
+    title = ""
+    summary=""
+    jumpUrl=""
+    pictureUrl=""
+    musicUrl=""
+    brief=""
+
 # 单独处理消息链
 class MsgChain:
     def __init__(self,inChain:list = None):
@@ -29,7 +37,20 @@ class MsgChain:
             self.addTextMsg(" ")
     def addImg_Base64(self,imgBase64:str):
         self.msgChain.append({"type":"Image","base64":imgBase64})
+    def addMusicShare(self,musicInfo:musicInfo):
+        self.msgChain.append({
+            "type": "MusicShare",
+            "kind": "NeteaseCloudMusic",
+            "title": musicInfo.title,
+            "summary": musicInfo.summary,
+            "jumpUrl": musicInfo.jumpUrl,
+            "pictureUrl": musicInfo.pictureUrl,
+            "musicUrl": musicInfo.musicUrl,
+            "brief": musicInfo.brief
+        })
 
+
+        
     async def getTextMsg(self):
         _msg = ""
         for msg in self.msgChain:
